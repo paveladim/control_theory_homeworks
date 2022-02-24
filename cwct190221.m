@@ -10,8 +10,7 @@ function cwct190221
     theta = -[0, 1] * inv(CM) * (chiA);
     L = -theta';
     
-    AC = [A, zeros(2, 2); L * C, A - L * C];
-    ACC1 = [A, B * theta; L * C, A - L * C + B * theta];
+    AC = [A, B * theta; L * C, A - L * C + B * theta];
 
     nx = size(AC, 1); % количество строчек
     nu = size(B, 2); % количество столбцов
@@ -29,7 +28,7 @@ function cwct190221
     X0(2) = -0.4;
 
     % находим решение замкнутой линейной системы
-    [TL, YL] = ode45(@(t, X)(ACC1 * X), ticks, X0, options);
+    [TL, YL] = ode45(@(t, X)(AC * X), ticks, X0, options);
 
 
     % --------------------------------------------------------------------
