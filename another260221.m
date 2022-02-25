@@ -1,4 +1,4 @@
-function hwct260221
+function another260221
     m  = 0.127; % масса маятника
     M  = 1.206; % масса тележки
     I  = 0.001; % момент инерции маятника относительно центра масс
@@ -17,39 +17,49 @@ function hwct260221
 
     % основная матрица системы
     A = [zeros(2, 2), eye(2); -inv(A0) * A2, -inv(A0) * A1];
-
-    % вектор C
+    
+    % вектор выхода
     C = [0, 0, 1, 0; 0, 0, 0, 1];
 
-    % вектор C
-    C = [1, 0, 0, 0; 0, 1, 0, 0];
+    % перейдём к двойственной системе, чтобы построить наблюдатель
+    A = A';
+    C = C';
+    B = B';
 
-    % матрица наблюдаемости
-    OBS = [C; C * A; C * A * A; C * A * A * A];
+    % матрица управляемости
+    controlM = [C, A * C, A^2 * C, A^3 * C];
     
-    if (rank(OBS) == size(A, 1))
-        disp("system is observed");
+    if (rank(controlM) == size(A, 1))
+        disp("system is contollable");
     else
-        disp("system is unobserved");
+        disp("system is uncontrollable")
     end
 
-    newA = A';
-    newB = C';
-    newB = newB(:, 1);
+    vec = [1; 0; 0; 0];
+    controlM1 = [controlM(:, 1), controlM(:, 3), controlM(:, 5), vec];
+    controlM2 = [controlM(:, 2), controlM(:, 4), controlM(:, 6), vec];
     
-    CTR = [newB, newA * newB, newA * newA * newB, newA * newA * newA * newB];
+    % передвинем собственные числа итеративно, если это возможно
+    [V, D] = eig(A');
+    vec = V(:, 2);
     
-    chiA = newA^4 + 19.0189 * newA^3 + 122.7163139 * newA^2 + 298.2903445 * newA + 193.5929306 * newA^0;
-    theta = -[0, 0, 0, 1] * inv(CTR) * chiA;
+    S = [vec'; 0, 1, 0, 0; 0, 0, 1, 0; 0, 0, 0, 1];
+    newA = S * A * inv(S);
+    newC = S * C;
+    newA = newA + newC * [0, 0, 0, 0; 15, 0, 0, 0];
+
+    theta = [0, 0, 0, 0; 15, 0, 0, 0] * S;
+    
+    % сам наблюдатель
     L = -theta';
-    L = [L, zeros(size(L, 1), 1)];
+    theta = [19.6330, -64.6908, 21.4010, -9.2987];
 
-    AA = [A, zeros(4, 4) + B * theta; L * C, A - L * C + B * theta];
+    A = A';
+    B = B';
+    C = C';
+    AC = [A, zeros(4, 4) + B * theta; L * C, A - L * C + B * theta];
 
-    disp(eig(AA));
-    
-    nx = size(AA, 1); % количество строчек
-    nu = size(B, 2); % количество столбцов
+    nx = size(AC, 1); % количество строчек
 
     % задаем время отрисовки графиков
     TIME = 10.0;
@@ -60,45 +70,30 @@ function hwct260221
     % задаем начальные условия 
     X0 = zeros(1, nx);   
 
-    X0(1) = 0.1;
-    X0(2) = -0.1;
+    X0(1) = 0.5;
+    X0(2) = -0.4;
 
     % находим решение замкнутой линейной системы
-    [TL, YL] = ode45(@(t, X)(AA * X), ticks, X0, options);
+    [TL, YL] = ode45(@(t, X)(AC * X), ticks, X0, options);
+
 
     % --------------------------------------------------------------------
 	% СТРОИМ ГРАФИКИ РЕШЕНИЙ
     % --------------------------------------------------------------------  
 
-    label1 = 'x(t)';
-    label2 = '\dot{x}(t)';
-    label3 = '\xi(t)';
-    label4 = '\dot{\xi}(t)';
-
     fhandle = figure;
-    subplot(2, 2, 1)
-        plot(TL, YL(:, 1), 'b', TL, YL(:, 5), 'r', 'LineWidth', 2.0)
-        grid on;
-        xlabel('t', 'FontSize', 12, 'FontWeight', 'bold');
-        ylabel(label1, 'FontSize', 12, 'FontWeight', 'bold');
-        title(sprintf('x_1^0 = %0.3f', X0(1)));
-    subplot(2, 2, 2)
-        plot(TL, YL(:, 2), 'b', TL, YL(:, 6), 'r', 'LineWidth', 2.0)
-        grid on;
-        xlabel('t', 'FontSize', 12, 'FontWeight', 'bold');
-        ylabel(label2, 'FontSize', 12, 'FontWeight', 'bold');
-        title(sprintf('x_2^0 = %0.3f', X0(2)));        
-    subplot(2, 2, 3)
+    subplot(2, 1, 1)
         plot(TL, YL(:, 3), 'b', TL, YL(:, 7), 'r', 'LineWidth', 2.0)
         grid on;
         xlabel('t', 'FontSize', 12, 'FontWeight', 'bold');
-        ylabel(label3, 'FontSize', 12, 'FontWeight', 'bold');
-        title(sprintf('x_2^0 = %0.3f', X0(3)));  
-    subplot(2, 2, 4)
+        ylabel('x(t)', 'FontSize', 12, 'FontWeight', 'bold');
+        title(sprintf('x_1^0 = %0.3f', X0(1)));
+    subplot(2, 1, 2)
         plot(TL, YL(:, 4), 'b', TL, YL(:, 8), 'r', 'LineWidth', 2.0)
         grid on;
         xlabel('t', 'FontSize', 12, 'FontWeight', 'bold');
-        ylabel(label4, 'FontSize', 12, 'FontWeight', 'bold');
-        title(sprintf('x_2^0 = %0.3f', X0(4)));  
+        ylabel('\xi(t)', 'FontSize', 12, 'FontWeight', 'bold');
+        title(sprintf('x_2^0 = %0.3f', X0(2)));               
+
 
 end
