@@ -7,37 +7,80 @@ function cw260221
     C = inv(C);
     chiA = A^2 - 0.25 * A^0;
     theta = -[0, 1] * C * chiA;
-    theta1 = -place(A, B, [-0.5, 0.5]);
-
-    %theta = [-0.75 / h^2, -0.5 / h + 0.75 * 0.5 / h];
+    theta = -place(A, B, [-0.1, -0.2]);
 
     disp(eig(A + B * theta));
-    AC = A + B * theta;
 
-    nx = size(AC, 1); % количество строчек
+    nx = size(A, 1); % количество строчек
+    % задаем время отрисовки графиков
+    TIME = 10.0;
+    % задаем параметры метода решения системы дифференциальных уравнений
+    options = odeset('RelTol', 1e-5, 'AbsTol', 1e-5 * ones(1, nx));
+    % задаем начальные условия 
+    x0 = zeros(nx, 1);   
 
-    x = [0.1; 0.2];
-    vec(:, 1) = x;
-    ticks(:, 1) = 0;
- 
-    i = 2;
-    while i < 50
-        x = AC * x;
-        vec(:, i) = x;
-        ticks(:, i) = ticks(:, i - 1) + h;
-        i = i + 1;
+    x0(1) = 0.5;
+    x0(2) = -0.4;
+
+    discr = 0 : h : TIME;
+    tlst = [];
+    xlst = [;];
+
+%     for i = 1 : size(discr, 2) - 1
+%         ticks = discr(i) : 0.001 : discr(i + 1);
+%         [TL, YL] = ode45(@(t, X)(A * X + B * theta * x0), ticks, x0', options);
+%         tlst = [tlst; TL];
+%         xlst = [xlst; YL];
+%         x0 = YL(end, :)';
+%     end
+
+    tlst = [];
+    xlst = [;];
+    eps = 0.001;
+    for i = 1 : size(discr, 2) - 1
+        tend = discr(i) + eps * h;
+        ticks = discr(i) : 0.00001 : tend;
+        [TL, YL] = ode45(@(t, X)(A * X + B * theta * x0), ticks, x0', options);
+        tlst = [tlst; TL];
+        xlst = [xlst; YL];
+        x0 = YL(end, :)';
+
+        ticks = tend : 0.001 : discr(i + 1);
+        [TL, YL] = ode45(@(t, X)(A * X), ticks, x0', options);
+        tlst = [tlst; TL];
+        xlst = [xlst; YL];
+        x0 = YL(end, :)';
     end
-    
+% 
+%     tlst = [];
+%     xlst = [;];
+%     delta = h * 0.25;
+%     for i = 1 : size(discr, 2) - 1
+%         ticks = discr(i) : 0.001 : (discr(i) + delta);
+%         [TL, YL] = ode45(@(t, X)(A * X + B * theta * x0), ticks, x0', options);
+%         tlst = [tlst; TL];
+%         xlst = [xlst; YL];
+%         x0 = YL(end, :)';
+% 
+%         ticks = (discr(i) + delta) : 0.001 : discr(i + 1);
+%         [TL, YL] = ode45(@(t, X)(A * X), ticks, x0', options);
+%         tlst = [tlst; TL];
+%         xlst = [xlst; YL];
+%         x0 = YL(end, :)';
+%     end
+
     fhandle = figure;
     subplot(2, 1, 1)
-        plot(ticks, vec(1, :), 'b', 'LineWidth', 2.0)
+        plot(tlst, xlst(:, 1), 'b', 'LineWidth', 2.0)
         grid on;
         xlabel('t', 'FontSize', 12, 'FontWeight', 'bold');
         ylabel('x(t)', 'FontSize', 12, 'FontWeight', 'bold');
+        title(sprintf('x_1^0 = %0.3f', x0(1)));
     subplot(2, 1, 2)
-        plot(ticks, vec(2, :), 'b', 'LineWidth', 2.0)
+        plot(tlst, xlst(:, 2), 'b', 'LineWidth', 2.0)
         grid on;
         xlabel('t', 'FontSize', 12, 'FontWeight', 'bold');
-        ylabel('\xi(t)', 'FontSize', 12, 'FontWeight', 'bold');     
+        ylabel('\xi(t)', 'FontSize', 12, 'FontWeight', 'bold');
+        title(sprintf('x_2^0 = %0.3f', x0(2)));
 
 end
