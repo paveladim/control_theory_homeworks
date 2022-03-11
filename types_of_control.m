@@ -1,4 +1,4 @@
-function cw260221
+function types_of_control
     h = 0.5;
     A = [1, h; 0, 1];
     B = [0.5 * h^2; h];

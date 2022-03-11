@@ -1,4 +1,4 @@
-function cwct190221
+function observer_synthesis
 
     A = [1, 0; 0, 0];
     B = [1; 1];
