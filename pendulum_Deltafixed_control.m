@@ -13,17 +13,18 @@ function pendulum_Deltafixed_control
 
     A1 = diag([Bc, Bp]);
     A2 = diag([0, -m * g * l]);
-    B = [0; 0; inv(A0) * [1; 0]];
+    B  = [0; 0; inv(A0) * [1; 0]];
 
     % основная матрица системы
     A = [zeros(2, 2), eye(2); -inv(A0) * A2, -inv(A0) * A1];
 
-    h = 0.1;
-    delta = h * 0.3;
-    Ad = expm(A * h);
-    Bd = expm(A * h) * B * delta;
+    h     = 0.1;
+    delta = h * 0.1;
+    Ad    = expm(A * h);
+    f = @(s)(expm(A * s) * B);
+    Bd = integral(f, 0, delta, "ArrayValued", true);
 
-    theta = -place(Ad, Bd, [-0.2, -0.1, 0.1, 0.2]);
+    theta = -place(Ad, Bd, [-0.2, -0.1, 0.1, 0.2])
 
     nx = size(Ad, 1); % количество строчек
     % задаем время отрисовки графиков
@@ -37,39 +38,50 @@ function pendulum_Deltafixed_control
     x0(2) = -0.3;
 
     discr = 0 : h : TIME;
-    tlst = [];
-    xlst = [;;;];
-    ulst = [];
+    tlst  = [];
+    ylst  = [;;;];
+    ulst  = [];
+ 
+    y = x0';
+    dt = 0.001;
+    for i = 1:(length(discr) - 1)
+        t = discr(i);
+        tlst = [tlst; t];
+        ylst = [ylst; y'];
+        while (t < discr(i) + delta)
+            t = t + dt;
+            ulst = [ulst; theta * x0'];
+            y = y + dt * ((A + B * theta) * y);
+            tlst = [tlst; t];
+            ylst = [ylst; y'];
+        end
+ 
+        while (t < discr(i + 1))
+            t = t + dt;
+            ulst = [ulst; 0];
+            y = y + dt * (A * y);
+            tlst = [tlst; t];
+            ylst = [ylst; y'];
+        end
 
-    ticks = discr(1) : 0.001 : discr(2);
-    [TL, YL] = ode45(@(t, X)(A * X), ticks, x0, options);
-    tlst = [tlst; TL];
-    xlst = [xlst; YL];
-    ulst = [ulst, 0 * ones(1, size(TL, 1))];
-    x0 = YL(end, :);
+        ulst = [ulst; 0];
 
-    for i = 2 : size(discr, 2) - 1
-        ticks = discr(i) : 0.001 : discr(i + 1);
-        [TL, YL] = ode45(@(t, X)(A * X + B * theta * x0' * (heaviside(t - discr(i)) - heaviside(t - discr(i) - delta))), ticks, x0, options);
-        tlst = [tlst; TL];
-        xlst = [xlst; YL];
-        ulst = [ulst, theta * x0' * ones(1, size(TL, 1))];
-        x0 = YL(end, :);
+        x0 = ylst(end, :);
     end
 
     fhandle = figure;
     subplot(3, 1, 1)
-        plot(tlst, xlst(:, 1), 'b', 'LineWidth', 2.0)
+        plot(tlst, ylst(:, 1), 'b', 'LineWidth', 2.0)
         grid on;
         xlabel('t', 'FontSize', 12, 'FontWeight', 'bold');
         ylabel('x(t)', 'FontSize', 12, 'FontWeight', 'bold');
     subplot(3, 1, 2)
-        plot(tlst, xlst(:, 2), 'b', 'LineWidth', 2.0)
+        plot(tlst, ylst(:, 2), 'b', 'LineWidth', 2.0)
         grid on;
         xlabel('t', 'FontSize', 12, 'FontWeight', 'bold');
         ylabel('\xi(t)', 'FontSize', 12, 'FontWeight', 'bold');
     subplot(3, 1, 3)
-        plot(tlst, ulst(1, :), 'b', 'LineWidth', 2.0)
+        plot(tlst, ulst(:, 1), 'b', 'LineWidth', 2.0)
         grid on;
         xlabel('t', 'FontSize', 12, 'FontWeight', 'bold');
         ylabel('u(t)', 'FontSize', 12, 'FontWeight', 'bold');
