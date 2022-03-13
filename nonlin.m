@@ -1,6 +1,6 @@
 plotnonlin();
 
-function Y = dxdt(t, X)
+function Y = dxdt(t, X, theta)
     m  = 0.127; % масса маятника
     M  = 1.206; % масса тележки
     I  = 0.001; % момент инерции маятника относительно центра масс
@@ -8,9 +8,6 @@ function Y = dxdt(t, X)
     Bc = 5.4;   % коэф. вязкого трения между кареткой и направляющей
     Bp = 0.002; % коэф. вязкого трения в точке крепления
     g  = 9.81;  % коэф. свободного падения
-
-    theta = [0, 0, 0, 0]; % регулятор
-    theta = [19.6330, -64.6908, 21.4010, -9.2987];
 
     x    = X(1);
     phi  = X(2);
@@ -26,7 +23,7 @@ function Y = dxdt(t, X)
 
     b = [
           F - Bc * dx - m * l * dphi^2 * sin(phi);
-         -Bp * phi + m * g * l * sin(phi)
+         -Bp * dphi + m * g * l * sin(phi)
         ];
 
     Y = [dx; dphi; inv(A) * b];
@@ -50,6 +47,8 @@ function plotnonlin
     % находим решение замкнутой линейной системы
     % [TL, YL] = ode45(@dxdt, ticks, X0, options);
 
+    theta = [19.6330, -64.6908,   21.4010,   -9.2987];
+
     t = 0;
     dt = 0.01;
     TL = [];
@@ -59,7 +58,7 @@ function plotnonlin
     Y = X0';
     while (t < TIME)
         t = t + dt;
-        Y = Y + dt * dxdt(t, Y);
+        Y = Y + dt * dxdt(t, Y, theta);
         TL = [TL; t];
         YL = [YL, Y];
     end
