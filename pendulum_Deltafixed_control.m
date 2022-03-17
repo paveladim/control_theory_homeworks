@@ -29,10 +29,11 @@ function pendulum_Deltafixed_control
     nx = size(Ad, 1); % количество строчек
     % задаем время отрисовки графиков
     TIME = 1.0;
+    options = odeset('RelTol', 1e-5, 'AbsTol', 1e-5 * ones(1, nx));
     % задаем начальные условия 
     x0 = zeros(1, nx);   
 
-    x0(1) = 0.0;
+    x0(1) = 0.2;
     x0(2) = -0.3;
 
     discr = 0 : h : TIME;
@@ -43,26 +44,19 @@ function pendulum_Deltafixed_control
     y = x0';
     dt = 0.001;
     for i = 1:(length(discr) - 1)
-        t = discr(i);
-        tlst = [tlst; t];
-        ylst = [ylst; y'];
-        while (t < discr(i) + delta)
-            t = t + dt;
-            ulst = [ulst; theta * x0'];
-            y = y + dt * ((A + B * theta) * y);
-            tlst = [tlst; t];
-            ylst = [ylst; y'];
-        end
- 
-        while (t < discr(i + 1))
-            t = t + dt;
-            ulst = [ulst; 0];
-            y = y + dt * (A * y);
-            tlst = [tlst; t];
-            ylst = [ylst; y'];
-        end
+        ticks = discr(i) : 0.001 : discr(i) + delta;
+        [TL, YL] = ode45(@(t, X)((A + B * theta) * X), ticks, x0, options);
+        tlst = [tlst; TL];
+        ylst = [ylst; YL];
+        ulst = [ulst, theta * x0' * ones(1, length(TL))];
+        x0 = ylst(end, :);
 
-        ulst = [ulst; 0];
+        ticks = discr(i) + delta : 0.001 : discr(i + 1);
+        [TL, YL] = ode45(@(t, X)(A * X), ticks, x0, options);
+        tlst = [tlst; TL];
+        ylst = [ylst; YL];
+        ulst = [ulst, 0 * ones(1, length(TL))];
+
         x0 = ylst(end, :);
     end
 
@@ -78,7 +72,7 @@ function pendulum_Deltafixed_control
         xlabel('t', 'FontSize', 12, 'FontWeight', 'bold');
         ylabel('\xi(t)', 'FontSize', 12, 'FontWeight', 'bold');
     subplot(3, 1, 3)
-        plot(tlst, ulst(:, 1), 'b', 'LineWidth', 2.0)
+        plot(tlst, ulst(1, :), 'b', 'LineWidth', 2.0)
         grid on;
         xlabel('t', 'FontSize', 12, 'FontWeight', 'bold');
         ylabel('u(t)', 'FontSize', 12, 'FontWeight', 'bold');

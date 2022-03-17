@@ -50,7 +50,7 @@ function nonlin_DF
     A = [zeros(2, 2), eye(2); -inv(A0) * A2, -inv(A0) * A1];
 
     h     = 0.1;
-    delta = h * 0.99;
+    delta = h * 0.5;
     Ad    = expm(A * h);
     f = @(s)(expm(A * s) * B);
     Bd = integral(f, 0, delta, "ArrayValued", true);
@@ -60,6 +60,7 @@ function nonlin_DF
     nx = size(Ad, 1); % количество строчек
     % задаем время отрисовки графиков
     TIME = 1.0;
+    options = odeset('RelTol', 1e-5, 'AbsTol', 1e-5 * ones(nx, 1));
     % задаем начальные условия 
     x0 = zeros(1, nx);   
 
@@ -71,29 +72,19 @@ function nonlin_DF
     ylst  = [;;;];
     ulst  = [];
  
-    y = x0';
-    dt = 0.001;
     for i = 1:(length(discr) - 1)
-        t = discr(i);
-        tlst = [tlst; t];
-        ylst = [ylst; y'];
-        while (t < discr(i) + delta)
-            t = t + dt;
-            ulst = [ulst; theta * x0'];
-            y = y + dt * dxdt(t, y, theta, x0');
-            tlst = [tlst; t];
-            ylst = [ylst; y'];
-        end
+        ticks = discr(i) : 0.001 : (discr(i) + delta);
+        [TL, YL] = ode45(@(TL, YL)dxdt(TL, YL, theta, x0'), ticks, x0, options);
+        tlst = [tlst; TL];
+        ylst = [ylst; YL];
+        ulst = [ulst, theta * x0' * ones(1, length(TL))];
+        x0 = ylst(end, :);
  
-        while (t < discr(i + 1))
-            t = t + dt;
-            ulst = [ulst; 0];
-            y = y + dt * dxdt(t, y, [0, 0, 0, 0], x0');
-            tlst = [tlst; t];
-            ylst = [ylst; y'];
-        end
-
-        ulst = [ulst; 0];
+        ticks = (discr(i) + delta) : 0.001 : discr(i + 1);
+        [TL, YL] = ode45(@(TL, YL)dxdt(TL, YL, [0, 0, 0, 0], x0'), ticks, x0, options);
+        tlst = [tlst; TL];
+        ylst = [ylst; YL];
+        ulst = [ulst, 0 * ones(1, length(TL))];
         x0 = ylst(end, :);
     end
 
@@ -109,7 +100,7 @@ function nonlin_DF
         xlabel('t', 'FontSize', 12, 'FontWeight', 'bold');
         ylabel('\xi(t)', 'FontSize', 12, 'FontWeight', 'bold');
     subplot(3, 1, 3)
-        plot(tlst, ulst(:, 1), 'b', 'LineWidth', 2.0)
+        plot(tlst, ulst(1, :), 'b', 'LineWidth', 2.0)
         grid on;
         xlabel('t', 'FontSize', 12, 'FontWeight', 'bold');
         ylabel('u(t)', 'FontSize', 12, 'FontWeight', 'bold');

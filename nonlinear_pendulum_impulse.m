@@ -75,7 +75,7 @@ function nonlin_IMP
 
     for i = 1 : length(discr) - 1
         ticks = discr(i) : 0.001 : discr(i + 1);
-        [TL, YL] = ode45(@(t, X) dxdt(t, X, [0, 0, 0, 0]), ticks, x0, options);
+        [TL, YL] = ode45(@(TL, YL)dxdt(TL, YL, theta), ticks, x0, options);
         tlst = [tlst; TL];
         xlst = [xlst; YL];
         if (i == 1)
