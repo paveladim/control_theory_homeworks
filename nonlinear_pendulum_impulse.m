@@ -64,8 +64,8 @@ function nonlin_IMP
     % задаем начальные условия 
     x0 = zeros(1, nx);   
 
-    x0(1) = 0.0;
-    x0(2) = -0.3;
+    x0(1) = 0.02;
+    x0(2) = -0.03;
 
     discr = 0 : h : TIME;
     tlst = [];

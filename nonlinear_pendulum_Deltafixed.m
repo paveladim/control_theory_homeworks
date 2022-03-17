@@ -50,21 +50,21 @@ function nonlin_DF
     A = [zeros(2, 2), eye(2); -inv(A0) * A2, -inv(A0) * A1];
 
     h     = 0.1;
-    delta = h * 0.9;
+    delta = h * 0.99;
     Ad    = expm(A * h);
     f = @(s)(expm(A * s) * B);
     Bd = integral(f, 0, delta, "ArrayValued", true);
 
-    theta = -place(Ad, Bd, [-0.2, -0.5, 0.5, 0.2]);
+    theta = -place(Ad, Bd, [-0.2, -0.1, 0.1, 0.2]);
 
     nx = size(Ad, 1); % количество строчек
     % задаем время отрисовки графиков
-    TIME = 5.0;
+    TIME = 1.0;
     % задаем начальные условия 
     x0 = zeros(1, nx);   
 
-    x0(1) = 0.01;
-    x0(2) = -0.01;
+    x0(1) = 0.02;
+    x0(2) = -0.03;
 
     discr = 0 : h : TIME;
     tlst  = [];

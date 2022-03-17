@@ -63,7 +63,6 @@ function pendulum_Deltafixed_control
         end
 
         ulst = [ulst; 0];
-
         x0 = ylst(end, :);
     end
 
